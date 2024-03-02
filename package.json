@@ -6,5 +6,8 @@
   "scripts": {
     "test": "node server.js"
   },
-  "author": ""
+  "author": "",
+  "dependencies": {
+    "bcrypt": "^5.1.1"
+  }
 }
