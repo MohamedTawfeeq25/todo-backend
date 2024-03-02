@@ -1,0 +1,10 @@
+{
+  "name": "to-do_list_app-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
+  },
+  "author": ""
+}
