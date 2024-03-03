@@ -1,5 +1,5 @@
 const task=(sql)=>{
-    var query="USE todo_list; CREATE TABLE Tasks (t_id INT PRIMARY KEY AUTO_INCREMENT,u_id INT NOT NULL,task_name TEXT NOT NULL,description TEXT,due_date DATE NOT NULL,completed BOOLEAN DEFAULT FALSE,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+    var query="USE todo_list; CREATE TABLE Tasks (t_id INT PRIMARY KEY AUTO_INCREMENT,u_id INT NOT NULL,task_name TEXT NOT NULL,description TEXT,due_date DATE NOT NULL,completed BOOLEAN DEFAULT FALSE,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,priority enum('high','medium','low') DEFAULT 'low' NOT NULL);";
     sql.query(query,(err,out)=>{
         if(err==null){
             if(out[1].serverStatus==2){

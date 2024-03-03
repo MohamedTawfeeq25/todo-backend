@@ -4,7 +4,9 @@ const mysql=require('mysql');
 const dotenv=require('dotenv').config();
 const bcrypt=require('bcrypt');
 const body_parser=require('body-parser');
+
 app.use(body_parser.json());
+
 const sql=mysql.createConnection({host:'localhost',user:'root',password:process.env.password,database:"todo_list",multipleStatements: true});
 sql.connect((err)=>{
     if(err==null){
@@ -113,34 +115,42 @@ app.post('/to-do/auth/login',(req,res)=>{
     }
     // if phone number is used for login
     else if(req.body.phone!=undefined){
+        //fetch the password from db with phone number
         sql.query("SELECT password FROM users WHERE phone=?;",[req.body.phone],(err1,out1)=>{
             if(err1==null){
+                //if phone number does not exits
                 if(out1.length==0){
                     console.log("user not exits");
                     res.send({message:"user not exits"});
                 }
                 else{
+                    //decrypting and compare the password
                     bcrypt.compare(req.body.password,out1[0].password,(err,ret)=>{
                         if(err==null){
+                            //verified
                             if(ret===true){
                                 res.send({u_id:out1[0].u_id,message:"verfied"});
                             }
+                            //incorrect password
                             else{
                                 res.send({message:"incorrect password"});
                             }
                         }
+                        //error handler for decryption
                         else{
                             console.log(err);
                         }
                     })
                 }
             }
+            //error handler for fetch password query
             else{
                 console.log(err1);
             }
         })
     }
 });
+//API for updating the password
 app.put('/to-do/auth/changePassword',(req,res)=>{
     //check whether the data is valid or not
     if(req.body.current_password!=undefined && req.body.new_password!=undefined && req.body.u_id){
@@ -197,7 +207,42 @@ app.put('/to-do/auth/changePassword',(req,res)=>{
         res.send({message:"data error"});
     }
 });
-//task management
+//creating a task
+/*JSON payload for creating task
+{
+    "u_id":1,
+    "task_name":"Complete project title",
+    "description":"draft and finalize the title od the project",
+    "due_date":"2024-03-10",
+    "priority":"medium",
+
+}
+*/
+app.post('/to-do/task/add',(req,res)=>{
+    sql.query("SELECT u_id FROM users WHERE u_id=?",[req.body.u_id],(err1,out1)=>{
+        if(err1==null){
+            if(out1.length==0){
+                res.send({message:"user id error"});
+            }
+            else{
+                sql.query("INSERT INTO tasks (u_id,task_name,description,due_date,priority) VALUES(?,?,?,?,?)",[req.body.u_id,req.body.task_name,req.body.description,req.body.due_date,req.body.priority],(err2,out2)=>{
+                    if(err2==null){
+                        if(out2.affectedRows==1){
+                            res.send({message:"task added"});
+                        }
+                    }
+                    else{
+                        console.log(err2);
+                    }
+                })
+            }
+        }
+        else{
+            console.log(err1);
+        }
+    })
+})
+
 
 
 app.listen(2000,()=>{console.log("server started")});
