@@ -142,45 +142,62 @@ app.post('/to-do/auth/login',(req,res)=>{
     }
 });
 app.put('/to-do/auth/changePassword',(req,res)=>{
+    //check whether the data is valid or not
     if(req.body.current_password!=undefined && req.body.new_password!=undefined && req.body.u_id){
+       //fetch the password from database with u_id
         sql.query("SELECT password FROM users WHERE u_id=?",[req.body.u_id],(err1,out1)=>{
                 if(err1==null){
+                    //compare the encrypted password with current password
                     bcrypt.compare(req.body.current_password,out1[0].password,(err,resu)=>{
                         if(err==null){
+                            //if password correct
                             if(resu==true){
+                                //encrypt the new password
                                 bcrypt.hash(req.body.new_password,10,(err2,out2)=>{
                                     if(err2==null){
+                                        //update the exiting password with new password in db
                                         sql.query("UPDATE  users SET password=? WHERE u_id=?;",[out2,req.body.u_id],(err3,out3)=>{
                                             if(err3==null){
+                                                //send response to user
                                                 if(out3.affectedRows==1){
                                                     res.send({message:"password updated"});
                                                 }
                                             }
+                                            //error handler for update query
                                             else{
                                                 console.log(err3);
                                             }
                                         })
                                     }
+                                    //error handler for encryption
                                     else{
                                         console.log(err2);
                                     }
                                 })
                             }
-                            else if(res==false){
+                            //current password is wrong
+                            else if(resu==false){
                                 res.send({message:"incorrect current password"});
                             }
                         }
+                        //error handler for decrypting current password
+                        else{
+                            console.log(err);
+                        }
                     });
-                }   
+                }
+                //error handler for fetch password query from db with u_id   
                 else{
                     console.log(err1);
                 }
         })
     }
+    //if data missing or data error request message
     else{
         res.send({message:"data error"});
     }
-})
-//profile management
+});
+//task management
+
 
 app.listen(2000,()=>{console.log("server started")});
