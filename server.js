@@ -235,6 +235,8 @@ app.put('/to-do/auth/changePassword',(req,res)=>{
         res.send({message:"data error"});
     }
 });
+//retrieve all task for specific user
+app.get('/to-do/task/retrieve/')
 //creating a task
 /*JSON payload for creating task
 {
@@ -271,7 +273,33 @@ app.post('/to-do/task/add',(req,res)=>{
         }
     })
 })
+//updating a task
+/*JSON payload for updating task
+{
+    "t_id":1,
+    "task_name":"Complete project title",
+    "description":"draft and finalize the title of the project",
+    "due_date":"2024-03-10",
+    "priority":"medium",
 
+}
+*/
+app.put('/to-do/task/update',(req,res)=>{
+    sql.query("UPDATE tasks SET task_name=?,description=?,due_date=?,priority=? WHERE t_id=?",[req.body.task_name,req.body.description,req.body.due_date,req.body.priority,req.body.t_id],(err1,out1)=>{
+        if(err1==null){
+            if(out1.affectedRows==1){
+                res.send({message:"task updated"});
+            }
+            else{
+                console.log(out1);
+                res.send({message:"t_id error"});
+            }
+        }
+        else{
+            console.log(err1);
+        }
+    })
+})
 //deleting the task
 /*JSON payload for deleting task
 {
