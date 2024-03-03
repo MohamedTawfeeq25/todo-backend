@@ -20,6 +20,7 @@ app.get('/test',(req,res)=>{
     console.log(req.url);
     res.send({message:"working"});
 });
+//Login and Register 
 app.post('/to-do/auth/register',(req,res)=>{
     // checks whether the user exists 
     sql.query("SELECT u_id FROM users WHERE email=?",[req.body.email],(err2,ret)=>{
@@ -33,7 +34,15 @@ app.post('/to-do/auth/register',(req,res)=>{
                            if(err2==null){
                                if(out.affectedRows==1){
                                    //user added
-                                   res.send({message:"User added"});
+                                   sql.query("SELECT u_id FROM users WHERE email=?",[req.body.email],(err4,out4)=>{
+                                       if(err4==null){
+                                        res.send({u_id:out4[0].u_id,message:"User added"});
+                                       }
+                                       else{
+                                           console.log(err4);
+                                       }
+                                   })
+                                  
                                }
                                else{
 
@@ -65,34 +74,44 @@ app.post('/to-do/auth/register',(req,res)=>{
     
 });
 app.post('/to-do/auth/login',(req,res)=>{
-    if(req.body.email!=undefined){
-        sql.query("SELECT password FROM users WHERE email=?;",[req.body.email],(err1,out1)=>{
+    //if email is used to login
+       if(req.body.email!=undefined){
+           //check user exits
+        sql.query("SELECT u_id,password FROM users WHERE email=?;",[req.body.email],(err1,out1)=>{
             if(err1==null){
+                //user not exits
                 if(out1.length==0){
                     console.log("user not exits");
                     res.send({message:"user not exits"});
                 }
+                //user exits
                 else{
+                    //compare the password
                     bcrypt.compare(req.body.password,out1[0].password,(err,ret)=>{
                         if(err==null){
+                            // verified
                             if(ret===true){
-                                res.send({message:"verfied"});
+                                      res.send({u_id:out1[0].u_id,message:"verfied"});
                             }
+                            //password error
                             else{
                                 res.send({message:"incorrect password"});
                             }
                         }
+                        //error handler for passord decryption
                         else{
                             console.log(err);
                         }
                     })
                 }
             }
+            //error handler for login query
             else{
                 console.log(err1);
             }
         })
     }
+    // if phone number is used for login
     else if(req.body.phone!=undefined){
         sql.query("SELECT password FROM users WHERE phone=?;",[req.body.phone],(err1,out1)=>{
             if(err1==null){
@@ -104,7 +123,7 @@ app.post('/to-do/auth/login',(req,res)=>{
                     bcrypt.compare(req.body.password,out1[0].password,(err,ret)=>{
                         if(err==null){
                             if(ret===true){
-                                res.send({message:"verfied"});
+                                res.send({u_id:out1[0].u_id,message:"verfied"});
                             }
                             else{
                                 res.send({message:"incorrect password"});
@@ -121,5 +140,47 @@ app.post('/to-do/auth/login',(req,res)=>{
             }
         })
     }
+});
+app.put('/to-do/auth/changePassword',(req,res)=>{
+    if(req.body.current_password!=undefined && req.body.new_password!=undefined && req.body.u_id){
+        sql.query("SELECT password FROM users WHERE u_id=?",[req.body.u_id],(err1,out1)=>{
+                if(err1==null){
+                    bcrypt.compare(req.body.current_password,out1[0].password,(err,resu)=>{
+                        if(err==null){
+                            if(resu==true){
+                                bcrypt.hash(req.body.new_password,10,(err2,out2)=>{
+                                    if(err2==null){
+                                        sql.query("UPDATE  users SET password=? WHERE u_id=?;",[out2,req.body.u_id],(err3,out3)=>{
+                                            if(err3==null){
+                                                if(out3.affectedRows==1){
+                                                    res.send({message:"password updated"});
+                                                }
+                                            }
+                                            else{
+                                                console.log(err3);
+                                            }
+                                        })
+                                    }
+                                    else{
+                                        console.log(err2);
+                                    }
+                                })
+                            }
+                            else if(res==false){
+                                res.send({message:"incorrect current password"});
+                            }
+                        }
+                    });
+                }   
+                else{
+                    console.log(err1);
+                }
+        })
+    }
+    else{
+        res.send({message:"data error"});
+    }
 })
+//profile management
+
 app.listen(2000,()=>{console.log("server started")});
