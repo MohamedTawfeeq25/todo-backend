@@ -23,6 +23,15 @@ app.get('/test',(req,res)=>{
     res.send({message:"working"});
 });
 //Login and Register 
+/*JSON payload for creating task
+{
+    "username":"user",
+    "email":"email25@xyz.com",
+    "password":"password123",
+    "phone":987654321
+
+}
+*/
 app.post('/to-do/auth/register',(req,res)=>{
     // checks whether the user exists 
     sql.query("SELECT u_id FROM users WHERE email=?",[req.body.email],(err2,ret)=>{
@@ -75,6 +84,17 @@ app.post('/to-do/auth/register',(req,res)=>{
 
     
 });
+/*JSON payload for login
+{
+    "email":"example24@email.com",
+    "password":"password123"
+}
+(or)
+{
+    "phone":987654321,
+    "password":"password123"
+}
+*/
 app.post('/to-do/auth/login',(req,res)=>{
     //if email is used to login
        if(req.body.email!=undefined){
@@ -151,6 +171,14 @@ app.post('/to-do/auth/login',(req,res)=>{
     }
 });
 //API for updating the password
+/*JSON payload for creating task
+{
+    "u_id":1,
+    "current_password":"current password",
+    "new_password":"new password"
+
+}
+*/
 app.put('/to-do/auth/changePassword',(req,res)=>{
     //check whether the data is valid or not
     if(req.body.current_password!=undefined && req.body.new_password!=undefined && req.body.u_id){
@@ -218,6 +246,7 @@ app.put('/to-do/auth/changePassword',(req,res)=>{
 
 }
 */
+
 app.post('/to-do/task/add',(req,res)=>{
     sql.query("SELECT u_id FROM users WHERE u_id=?",[req.body.u_id],(err1,out1)=>{
         if(err1==null){
@@ -243,6 +272,27 @@ app.post('/to-do/task/add',(req,res)=>{
     })
 })
 
-
-
+//deleting the task
+/*JSON payload for deleting task
+{
+ "t_id":1
+}
+*/
+app.delete('/to-do/task/delete',(req,res)=>{
+    if(req.body.t_id!=undefined){
+        sql.query("DELETE FROM tasks WHERE t_id=?",[req.body.t_id],(err1,out1)=>{
+            if(err1==null){
+                if(out1.affectedRows==1){
+                    res.send({message:"task deleted"});
+                }
+                else{
+                   res.send({message:"invalid task id"});
+                }
+            }
+            else{
+                console.log(err1);
+            }
+        })
+    }
+})
 app.listen(2000,()=>{console.log("server started")});
