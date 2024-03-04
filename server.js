@@ -2,11 +2,27 @@ const express=require('express');
 const app=new express();
 const mysql=require('mysql');
 const dotenv=require('dotenv').config();
+const jwt=require('jsonwebtoken');
 const bcrypt=require('bcrypt');
 const body_parser=require('body-parser');
 
 app.use(body_parser.json());
-
+const verifyToken=(req,res,next)=>{
+        const data=req.headers['authorization'];
+       
+        if(!data){
+            res.status(403).json({message:"token is not provided"});
+        }
+        else{
+        jwt.verify(data,process.env.SECRET_KEY,(err,out)=>{
+            if(err){
+                return res.status(401).json({message:"unauthorized access"});
+            }
+            req.user=out;
+            next();
+        })
+    }
+}
 const sql=mysql.createConnection({host:'localhost',user:'root',password:process.env.password,database:"todo_list",multipleStatements: true});
 sql.connect((err)=>{
     if(err==null){
@@ -47,7 +63,8 @@ app.post('/to-do/auth/register',(req,res)=>{
                                    //user added
                                    sql.query("SELECT u_id FROM users WHERE email=?",[req.body.email],(err4,out4)=>{
                                        if(err4==null){
-                                        res.send({u_id:out4[0].u_id,message:"User added"});
+                                        var enc=jwt.sign({id:out4[0].u_id},process.env.SECRET_KEY,{expiresIn:"2h"});
+                                        res.send({token:enc,message:"User added"});
                                        }
                                        else{
                                            console.log(err4);
@@ -113,7 +130,8 @@ app.post('/to-do/auth/login',(req,res)=>{
                         if(err==null){
                             // verified
                             if(ret===true){
-                                      res.send({u_id:out1[0].u_id,message:"verfied"});
+                                var enc=jwt.sign({id:out1[0].u_id},process.env.SECRET_KEY,{expiresIn:"2h"});
+                                      res.send({token:enc,message:"verfied"});
                             }
                             //password error
                             else{
@@ -149,7 +167,8 @@ app.post('/to-do/auth/login',(req,res)=>{
                         if(err==null){
                             //verified
                             if(ret===true){
-                                res.send({u_id:out1[0].u_id,message:"verfied"});
+                                var enc=jwt.sign({id:out1[0].u_id},process.env.SECRET_KEY,{expiresIn:"2h"});
+                                      res.send({token:enc,message:"verfied"});
                             }
                             //incorrect password
                             else{
@@ -179,11 +198,12 @@ app.post('/to-do/auth/login',(req,res)=>{
 
 }
 */
-app.put('/to-do/auth/changePassword',(req,res)=>{
+app.put('/to-do/auth/changePassword',verifyToken,(req,res)=>{
     //check whether the data is valid or not
-    if(req.body.current_password!=undefined && req.body.new_password!=undefined && req.body.u_id){
+    console.log(req.body);
+    if(req.body.current_password!=undefined && req.body.new_password!=undefined){
        //fetch the password from database with u_id
-        sql.query("SELECT password FROM users WHERE u_id=?",[req.body.u_id],(err1,out1)=>{
+        sql.query("SELECT password FROM users WHERE u_id=?",[req.user.id],(err1,out1)=>{
                 if(err1==null){
                     //compare the encrypted password with current password
                     bcrypt.compare(req.body.current_password,out1[0].password,(err,resu)=>{
@@ -194,7 +214,7 @@ app.put('/to-do/auth/changePassword',(req,res)=>{
                                 bcrypt.hash(req.body.new_password,10,(err2,out2)=>{
                                     if(err2==null){
                                         //update the exiting password with new password in db
-                                        sql.query("UPDATE  users SET password=? WHERE u_id=?;",[out2,req.body.u_id],(err3,out3)=>{
+                                        sql.query("UPDATE  users SET password=? WHERE u_id=?;",[out2,req.user.id],(err3,out3)=>{
                                             if(err3==null){
                                                 //send response to user
                                                 if(out3.affectedRows==1){
@@ -236,7 +256,10 @@ app.put('/to-do/auth/changePassword',(req,res)=>{
     }
 });
 //retrieve all task for specific user
-app.get('/to-do/task/retrieve/')
+app.get('/to-do/task/retrieve/',verifyToken,(req,res)=>{
+  console.log(req.user);
+  res.send({message:"done"});
+})
 //creating a task
 /*JSON payload for creating task
 {
