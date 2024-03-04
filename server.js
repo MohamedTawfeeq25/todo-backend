@@ -257,8 +257,25 @@ app.put('/to-do/auth/changePassword',verifyToken,(req,res)=>{
 });
 //retrieve all task for specific user
 app.get('/to-do/task/retrieve/',verifyToken,(req,res)=>{
-  console.log(req.user);
-  res.send({message:"done"});
+    sql.query("SELECT * FROM tasks WHERE u_id=?",[req.user.id],(err1,out1)=>{
+        if(err1==null){
+            console.log(out1.length);
+            var t_id=[],task_name=[],description=[],due_date=[],completed=[],created_at=[],priority=[];
+            out1.forEach((i)=>{
+                t_id.push(i.t_id);
+                task_name.push(i.task_name);
+                description.push(i.description);
+                due_date.push(i.due_date);
+                completed.push(i.completed);
+                created_at.push(i.created_at);
+                priority.push(i.priority);
+            })
+            res.json({t_id:t_id,task:task_name,desc:description,due:due_date,comp:completed,created:created_at,priority:priority});
+        }
+        else{
+            console.log(err1);
+        }
+    })
 })
 //creating a task
 /*JSON payload for creating task
