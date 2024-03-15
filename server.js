@@ -18,6 +18,7 @@ const verifyToken=(req,res,next)=>{
             if(err){
                 return res.status(401).json({message:"unauthorized access"});
             }
+            console.log(out);
             req.user=out;
             next();
         })
@@ -58,7 +59,8 @@ app.post('/to-do/auth/register',(req,res)=>{
                     if(err1==null){
                         //adding user to table
                        sql.query("INSERT INTO users(username,email,password,phone) VALUES(?,?,?,?);",[req.body.username,req.body.email,hash,req.body.phone],(err,out)=>{
-                           if(err2==null){
+                           if(err==null){
+                               console.log(out)
                                if(out.affectedRows==1){
                                    //user added
                                    sql.query("SELECT u_id FROM users WHERE email=?",[req.body.email],(err4,out4)=>{
@@ -70,7 +72,6 @@ app.post('/to-do/auth/register',(req,res)=>{
                                            console.log(err4);
                                        }
                                    })
-                                  
                                }
                                else{
 
@@ -277,10 +278,78 @@ app.get('/to-do/task/retrieve/',verifyToken,(req,res)=>{
         }
     })
 })
+// to retrieve specific task with  for specific user
+app.get('/to-do/task/retrieve/:id',verifyToken,(req,res)=>{
+    console.log(req.params['id']);
+    sql.query("SELECT * FROM tasks WHERE u_id=? and t_id=? ",[req.user.id,req.params.id],(err1,out1)=>{
+        if(err1==null){
+            console.log(out1);
+         
+            res.json({t_id:out1[0].t_id,task:out1[0].task_name,desc:out1[0].description,due:out1[0].due_date,comp:out1[0].completed,created:out1[0].created_at,priority:out1[0].priority});
+        }
+        else{
+            console.log(err1);
+        }
+    })
+});
+//to retrieve completed task
+app.get('/to-do/task/completed',verifyToken,(req,res)=>{
+    sql.query("SELECT * FROM tasks WHERE u_id=? and completed=1",[req.user.id],(err1,out1)=>{
+        if(err1==null){
+            if(out1.length==0){
+                res.json({message:"no task completed"});
+            }
+            else{
+            
+            var t_id=[],task_name=[],description=[],due_date=[],completed=[],created_at=[],priority=[];
+            out1.forEach((i)=>{
+                t_id.push(i.t_id);
+                task_name.push(i.task_name);
+                description.push(i.description);
+                due_date.push(i.due_date);
+                completed.push(i.completed);
+                created_at.push(i.created_at);
+                priority.push(i.priority);
+            })
+            res.json({t_id:t_id,task:task_name,desc:description,due:due_date,comp:completed,created:created_at,priority:priority});
+        }
+        }
+        else{
+            console.log(err1);
+        }
+    })
+});
+//to retrieve not  completed task
+app.get('/to-do/task/Notcompleted',verifyToken,(req,res)=>{
+    sql.query("SELECT * FROM tasks WHERE u_id=? and completed=0",[req.user.id],(err1,out1)=>{
+        if(err1==null){
+            if(out1.length==0){
+                res.json({message:"no task completed"});
+            }
+            else{
+            
+            var t_id=[],task_name=[],description=[],due_date=[],completed=[],created_at=[],priority=[];
+            out1.forEach((i)=>{
+                t_id.push(i.t_id);
+                task_name.push(i.task_name);
+                description.push(i.description);
+                due_date.push(i.due_date);
+                completed.push(i.completed);
+                created_at.push(i.created_at);
+                priority.push(i.priority);
+            })
+            res.json({t_id:t_id,task:task_name,desc:description,due:due_date,comp:completed,created:created_at,priority:priority});
+        }
+        }
+        else{
+            console.log(err1);
+        }
+    })
+});
 //creating a task
 /*JSON payload for creating task
 {
-    "u_id":1,
+   
     "task_name":"Complete project title",
     "description":"draft and finalize the title od the project",
     "due_date":"2024-03-10",
@@ -289,14 +358,14 @@ app.get('/to-do/task/retrieve/',verifyToken,(req,res)=>{
 }
 */
 
-app.post('/to-do/task/add',(req,res)=>{
-    sql.query("SELECT u_id FROM users WHERE u_id=?",[req.body.u_id],(err1,out1)=>{
+app.post('/to-do/task/add',verifyToken,(req,res)=>{
+    sql.query("SELECT u_id FROM users WHERE u_id=?",[req.user.id],(err1,out1)=>{
         if(err1==null){
             if(out1.length==0){
                 res.send({message:"user id error"});
             }
             else{
-                sql.query("INSERT INTO tasks (u_id,task_name,description,due_date,priority) VALUES(?,?,?,?,?)",[req.body.u_id,req.body.task_name,req.body.description,req.body.due_date,req.body.priority],(err2,out2)=>{
+                sql.query("INSERT INTO tasks (u_id,task_name,description,due_date,priority) VALUES(?,?,?,?,?)",[req.user.id,req.body.task_name,req.body.description,req.body.due_date,req.body.priority],(err2,out2)=>{
                     if(err2==null){
                         if(out2.affectedRows==1){
                             res.send({message:"task added"});
@@ -324,11 +393,27 @@ app.post('/to-do/task/add',(req,res)=>{
 
 }
 */
-app.put('/to-do/task/update',(req,res)=>{
+app.put('/to-do/task/update',verifyToken,(req,res)=>{
     sql.query("UPDATE tasks SET task_name=?,description=?,due_date=?,priority=? WHERE t_id=?",[req.body.task_name,req.body.description,req.body.due_date,req.body.priority,req.body.t_id],(err1,out1)=>{
         if(err1==null){
             if(out1.affectedRows==1){
                 res.send({message:"task updated"});
+            }
+            else{
+                console.log(out1);
+                res.send({message:"t_id error"});
+            }
+        }
+        else{
+            console.log(err1);
+        }
+    })
+})
+app.put('/to-do/task/completed',verifyToken,(req,res)=>{
+    sql.query("UPDATE tasks SET completed=1 WHERE t_id=? && u_id=?",[req.body.t_id,req.user.id],(err1,out1)=>{
+        if(err1==null){
+            if(out1.affectedRows==1){
+                res.send({message:"task completed"});
             }
             else{
                 console.log(out1);
